@@ -1,0 +1,223 @@
+﻿<html>
+
+<head>
+    <title>STEM maadi Students :)</title>
+    <link rel="shortcut icon" type="image/png" href="https://www.affectiva.com/wp-content/themes/affectiva-2018-child/img/favicon.ico">
+    <style>
+    
+
+        body {
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        }
+
+        #chart {
+            max-width: 600px;
+            max-height: 700px;
+            color: rgb(243, 241, 241);
+            border-color: rgb(8, 8, 19);
+            margin-left: 17px;
+        }
+
+        .form-control {
+            display: inline !important;
+        }
+    </style>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <meta charset="utf-8" />
+    <link type="text/css" rel="stylesheet" href="node_modules/@zoomus/websdk/dist/css/bootstrap.css" />
+    <link type="text/css" rel="stylesheet" href="node_modules/@zoomus/websdk/dist/css/react-select.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap" rel="stylesheet">
+
+    <meta name="format-detection" content="telephone=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+</head>
+   
+    </script>
+    <script src="node_modules/react/umd/react.production.min.js"></script>
+    <script src="node_modules/react-dom/umd/react-dom.production.min.js"></script>
+    <script src="node_modules/redux/dist/redux.min.js"></script>
+    <script src="node_modules/redux-thunk/dist/redux-thunk.min.js"></script>
+    <script src="node_modules/lodash/lodash.min.js"></script>
+    <script src="node_modules/jquery/dist/jquery.min.js"></script>
+
+    <script src="./js/tool.js"></script>
+    <script src="./static/index.min.js"></script>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="row" id="affdex_elements" style="width:610px;height:480px; margin-left:-5px; margin-right: 15px"></div>
+                <div class="row" style="margin-top: 1px;"></div>
+                <div class="row" style="margin-right: -30px; border-right: 1px solid rgb(241, 235, 238);">
+                    <div class="row" style="margin: 0 auto; margin-top: 1px;">
+                        <button style="margin:5px; border-color: rgb(2, 1, 1)" id="start" onclick="onStart()">Start</button>
+
+                        <button style="margin:5px; border-color: rgb(14, 4, 9)" id="stop" onclick="onStop()">Stop</button>
+                        <button style="margin:5px; border-color: rgb(19, 11, 15)" id="reset" onclick="onReset()">Reset</button>
+                    </div>
+                    <div class="row" style="margin: 15px;">
+                        <h3>Autism Navigator</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="row">
+                    <svg id="chart" width="900" height="520"></svg>
+                    <button style="margin: 0 auto; margin-bottom: -10px" onclick="download_csv()">Download CSV</button>
+                </div>
+                <div class="row" style="margin-top: 30px;"></div>
+                <div class="row" style="height:30em; margin-left:17px">
+                    <div class="col">
+                        <strong>EMOTION TRACKING RESULTS</strong>
+                        <div id="results" style="word-wrap:break-word;"></div>
+                    </div>
+                    <div class="col">
+
+                        <div id="logs"></div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+    <script src="https://download.affectiva.com/js/3.2.1/affdex.js"></script>
+    <script type="text/javascript" src="process.js"></script>
+    <script src="https://d3js.org/d3.v4.js"></script>
+
+    <script>
+        let csvContent = "data:text/csv;charset=utf-8,";
+        var lineArr = [];
+        var MAX_LENGTH = 100;
+        var duration = 500;
+        var chart = realTimeLineChart();
+
+        function randomNumberBounds(min, max) {
+            return Math.floor(Math.random() * max) + min;
+        }
+
+        function seedData() {
+            var now = new Date();
+            for (var i = 0; i < MAX_LENGTH; ++i) {
+                lineArr.push({
+                    time: new Date(now.getTime() - ((MAX_LENGTH - i) * duration)),
+                    Confusion: 0,
+                    Attention: 0,
+                    Engagement: 0                    
+                });
+            }
+        }
+
+        detector.addEventListener("onImageResultsSuccess", function (faces, image, timestamp) {
+            document.querySelector('#results').innerHTML = "";
+
+            if (faces.length > 0) {
+                log('#results', "Emoji: " + faces[0].emojis.dominantEmoji);
+                if (document.querySelector('#face_video_canvas') != null)
+                    drawFeaturePoints(image, faces[0].featurePoints);
+
+                var now = new Date();
+                var lineData = {
+                    time: now,                  
+                    Confusion: faces[0].expressions.browFurrow.toFixed(0),
+                    Attention: faces[0].expressions.attention.toFixed(0),
+                    Engagement: faces[0].emotions.engagement.toFixed(0),                    
+                };
+                var audio = new Audio('goes-without-saying.mp3');
+                if (faces[0].featurePoints[31].y - faces[0].featurePoints[30].y <= 2.5 || faces[0].featurePoints[33].y - faces[0].featurePoints[32].y <= 2.5) {
+                    lineData.Attention = .2 * lineData.Attention;
+                    audio.play();
+                    setTimeout(function () {
+                        window.alert('The child is not interacting! 💔⛔');
+                    }, 15);
+                }
+
+                lineArr.push(lineData);
+
+                if (lineArr.length > 30) {
+                    lineArr.shift();
+                }
+                d3.select("#chart").datum(lineArr).call(chart);
+
+            }
+        });
+
+        //this is the function that executes when the newly added button is clicked (It downloads the file with the data)
+        function download_csv(lineArr) {
+            var encodedUri = encodeURI(csvContent);
+            window.open(encodedUri);
+        }
+
+        function resize() {
+            if (d3.select("#chart svg").empty()) {
+                return;
+            }
+            chart.width(+d3.select("#chart").style("width").replace(/(px)/g, ""));
+            d3.select("#chart").call(chart); 
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            seedData();
+            window.setInterval(updateData, 1000);
+            d3.select("#chart").datum(lineArr).call(chart);
+            d3.select(window).on('resize', resize);
+        });
+    </script>
+
+
+    <style>
+        body {
+            background= "4444.png";
+            color: #151a63;
+        }
+
+        .sdk-select {
+            height: 34px;
+            border-radius: 4px;
+            color: rgb(53, 29, 192);
+        }
+
+        .websdktest button {
+            float: right;
+            margin-left: 5px;
+        }
+
+        #nav-tool {
+            margin-bottom: 0px;
+            color: rgb(7, 1, 4);
+            background-color: rgb(112, 6, 62);
+        }
+
+        #show-test-tool {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            display: block;
+            z-index: 99999;
+            color: rgb(12, 3, 7);
+        }
+
+        #display_name {
+            width: 250px;
+        }
+
+
+        #websdk-iframe {
+            width: 700px;
+            height: 500px;
+            border: 1px;
+            border-color: rgb(245, 243, 243);
+            border-style: dashed;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            left: 50%;
+            margin: 0;
+        }
+    </style>
+
+</body>
+
+</html>
+
